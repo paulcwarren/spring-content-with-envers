@@ -2,7 +2,7 @@
 
 ## Notes
 - The project's dependencies include `spring-data-envers`.  This provides a spring data (java only) API on top of [hibernate envers](https://hibernate.org/orm/envers/) feature.
-- The File entity is annotated as `@Audited`.  This tells hibernate to create additional tables and record revisions of the entity 
+- The [File](https://github.com/paulcwarren/spring-content-with-envers/blob/c388ff768a9524881d6d85a2e54dce3d79031ecd/src/main/java/gettingstarted/File.java) entity is annotated as `@Audited`.  This tells hibernate to create additional tables and record revisions of the entity 
 as it is modified over time.
 - [GenericRevisionController](https://github.com/paulcwarren/spring-content-with-envers/blob/dfb5702f801cfe99b12d13bb4652e00364dc842a/src/main/java/gettingstarted/GenericRevisionsController.java) is 
 an implementation of a generic controller providing rest endpoints on top of the spring-data-envers java API.
