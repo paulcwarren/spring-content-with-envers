@@ -4,7 +4,6 @@ import static java.lang.String.format;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -22,8 +21,6 @@ import org.springframework.data.rest.webmvc.RootResourceInformation;
 import org.springframework.data.web.PagedResourcesAssembler;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
-import org.springframework.hateoas.Link;
-import org.springframework.hateoas.server.core.EmbeddedWrappers;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.Assert;
@@ -31,12 +28,9 @@ import org.springframework.util.ReflectionUtils;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
-import lombok.NonNull;
 
 // https://github.com/spring-projects/spring-data-envers/issues/35
 
@@ -81,12 +75,18 @@ public class GenericRevisionsController implements InitializingBean {
 
         Page<Object> page = (Page<Object>) ReflectionUtils.invokeMethod(REVISIONS_METHOD, repo.get(), id, pageable);
 
-        List<Object> entities = new ArrayList<>();
-        for (Object revision : page) {
-            entities.add(((Revision)revision).getEntity());
-        }
+        if (page.getContent().isEmpty()) {
 
-        return new ResponseEntity<CollectionModel<?>>(entitiesToResources(page, pagedResourcesAssembler, null, Revision.class), HttpStatus.OK);
+            return new ResponseEntity<CollectionModel<?>>(pagedResourcesAssembler.toEmptyModel(page, Revision.class), HttpStatus.OK);
+        } else {
+
+            List<Object> entities = new ArrayList<>();
+            for (Object revision : page) {
+                entities.add(((Revision)revision).getEntity());
+            }
+
+            return new ResponseEntity<CollectionModel<?>>(pagedResourcesAssembler.toModel(page), HttpStatus.OK);
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -128,53 +128,8 @@ public class GenericRevisionsController implements InitializingBean {
         return ResponseEntity.notFound().build();
     }
 
-    protected static CollectionModel<?> entitiesToResources(Page<Object> page,
-            PagedResourcesAssembler<Object> prAssembler,
-            PersistentEntityResourceAssembler assembler,
-            Class<?> domainType) {
-
-        if (page.getContent().isEmpty()) {
-            return prAssembler.toEmptyModel(page, domainType);
-        }
-
-        if (assembler != null) {
-            return prAssembler.toModel(page, assembler);
-        } else {
-            return prAssembler.toModel(page);
-        }
-    }
-
-    protected static CollectionModel<?> toResources(List<Object> entities,
-            PersistentEntityResourceAssembler assembler,
-            Class<?> domainType) {
-
-        if (!entities.iterator().hasNext()) {
-
-            List<Object> content = Arrays.<Object> asList(new EmbeddedWrappers(false).emptyCollectionOf(domainType));
-            return new CollectionModel<Object>(content, getDefaultSelfLink());
-        }
-
-        List<EntityModel<Object>> resources = new ArrayList<EntityModel<Object>>();
-
-        for (Object obj : entities) {
-            if (assembler != null) {
-                resources.add(obj == null ? null : assembler.toModel(obj));
-            } else {
-
-                EntityModel m = EntityModel.of(obj);
-                resources.add(m);
-            }
-        }
-
-        return new CollectionModel<EntityModel<Object>>(resources, getDefaultSelfLink());
-    }
-
-    protected static Link getDefaultSelfLink() {
-        return Link.of(ServletUriComponentsBuilder.fromCurrentRequest().build().toUriString());
-    }
-
     public class RevisionOverride {
-        @JsonIgnore @NonNull RevisionMetadata metadata;
+        @JsonIgnore RevisionMetadata metadata;
     }
 
     @Override

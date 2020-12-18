@@ -3,7 +3,7 @@
 ## Notes
 - The project's dependencies include [spring-data-envers](https://github.com/paulcwarren/spring-content-with-envers/blob/c8a5a1d43c8fc43f39d6d0fbd50a8f8642a0ad08/pom.xml#L52).  This provides a spring data (java only) API on top of [hibernate envers](https://hibernate.org/orm/envers/) feature.
 - The [FileRepository](https://github.com/paulcwarren/spring-content-with-envers/blob/d7b9ddfc92a8651ae9c31e6f92df852fe4cdb576/src/main/java/gettingstarted/FileRepository.java#L8) extends
-RevisionRepository.
+RevisionRepository giving it an API for retrieving Revisions.
 - The [File](https://github.com/paulcwarren/spring-content-with-envers/blob/c388ff768a9524881d6d85a2e54dce3d79031ecd/src/main/java/gettingstarted/File.java) entity is annotated as `@Audited`.  This tells hibernate to create additional tables and record revisions of the entity 
 as it is modified over time.
 - [GenericRevisionController](https://github.com/paulcwarren/spring-content-with-envers/blob/dfb5702f801cfe99b12d13bb4652e00364dc842a/src/main/java/gettingstarted/GenericRevisionsController.java) is 

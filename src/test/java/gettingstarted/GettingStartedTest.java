@@ -5,6 +5,7 @@ import static com.github.paulcwarren.ginkgo4j.Ginkgo4jDSL.Context;
 import static com.github.paulcwarren.ginkgo4j.Ginkgo4jDSL.Describe;
 import static com.github.paulcwarren.ginkgo4j.Ginkgo4jDSL.It;
 import static com.jayway.restassured.RestAssured.given;
+import static java.lang.String.format;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.text.MatchesPattern.matchesPattern;
@@ -49,15 +50,17 @@ public class GettingStartedTest {
 
                 BeforeEach(() -> {
                     File f = new File();
-                    f.setName("test-file");
+                    f.setName("test-file #1");
                     f.setMimeType("text/plain");
                     f.setSummary("test file summary");
                     f = fileContentStore.setContent(f, new ByteArrayInputStream("revision #1".getBytes()));
                     file = fileRepo.save(f);
 
+                    f.setName("test-file #2");
                     f = fileContentStore.setContent(f, new ByteArrayInputStream("revision #2".getBytes()));
                     file = fileRepo.save(f);
 
+                    f.setName("test-file #3");
                     f = fileContentStore.setContent(f, new ByteArrayInputStream("revision #3".getBytes()));
                     file = fileRepo.save(f);
                 });
@@ -65,7 +68,13 @@ public class GettingStartedTest {
                 It("should return them all", () -> {
                     Long fid = file.getId();
 
-                    JsonPath jsonResponse = given().header("accept", "application/hal+json").when().get("/files/" + fid + "/revisions").then().statusCode(HttpStatus.SC_OK).extract().jsonPath();
+                    JsonPath jsonResponse = given()
+                            .header("accept", "application/hal+json")
+                            .when().get("/files/" + fid + "/revisions")
+                            .then()
+                            .statusCode(HttpStatus.SC_OK)
+                            .extract().jsonPath();
+
 
                     assertThat(jsonResponse.getList("_embedded.revisions").size(), is(3));
                 });
@@ -73,32 +82,50 @@ public class GettingStartedTest {
                 It("should return each revision", () -> {
                     Long fid = file.getId();
 
+                    int i=1;
                     Revisions<Integer, File> revisions = fileRepo.findRevisions(fid);
                     for (Revision<Integer, File> revision : revisions) {
 
-                        JsonPath jsonResponse = given().header("accept", "application/hal+json").when().get("/files/" + fid + "/revisions/" + revision.getRevisionNumber().get()).then().statusCode(HttpStatus.SC_OK).extract().jsonPath();
+                        JsonPath jsonResponse = given()
+                                .header("accept", "application/hal+json")
+                                .when()
+                                .get("/files/" + fid + "/revisions/" + revision.getRevisionNumber().get()).then()
+                                .statusCode(HttpStatus.SC_OK)
+                                .extract().jsonPath();
 
-                        assertThat(jsonResponse.get("entity.name"), is("test-file"));
+                        assertThat(jsonResponse.get("entity.name"), is(format("test-file #%s", i)));
+                        i++;
                     }
                 });
 
                 It("should return the latest revision", () -> {
                     Long fid = file.getId();
 
-                    JsonPath jsonResponse = given().header("accept", "application/hal+json").when().get("/files/" + fid + "/latestRevision").then().statusCode(HttpStatus.SC_OK).extract().jsonPath();
+                    JsonPath jsonResponse = given()
+                            .header("accept", "application/hal+json").when()
+                            .get("/files/" + fid + "/latestRevision")
+                            .then()
+                            .statusCode(HttpStatus.SC_OK).extract().jsonPath();
 
-                    assertThat(jsonResponse.get("entity.name"), is("test-file"));
+                    assertThat(jsonResponse.get("entity.name"), is("test-file #3"));
                 });
 
                 It("should return content for each revision", () -> {
                     Long fid = file.getId();
 
+                    int i=1;
                     Revisions<Integer, File> revisions = fileRepo.findRevisions(fid);
                     for (Revision<Integer, File> revision : revisions) {
 
-                        String response = given().header("accept", "text/plain").when().get("/files/" + fid + "/revisions/" + revision.getRevisionNumber().get() + "/content").then().statusCode(HttpStatus.SC_OK).extract().asString();
+                        String response = given()
+                                .header("accept", "text/plain")
+                                .when()
+                                .get("/files/" + fid + "/revisions/" + revision.getRevisionNumber().get() + "/content")
+                                .then()
+                                .statusCode(HttpStatus.SC_OK).extract().asString();
 
-                        assertThat(response, matchesPattern("revision #\\d"));
+                        assertThat(response, matchesPattern(format("revision #%s", i)));
+                        i++;
                     }
                 });
             });
